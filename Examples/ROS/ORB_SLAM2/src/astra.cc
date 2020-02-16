@@ -132,7 +132,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
     bool  isKeyFrame =true;
     cv::Mat Tcw;
-    Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec(),isKeyFrame);
     if (!Tcw.empty())
 	{
 				  //cv::Mat Twc =Tcw.inv();
@@ -178,7 +178,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 				 pub_camerapath.publish(camerapath);  //相机轨迹
 				 if( isKeyFrame)
 				{
-                                        pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
+					pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
 					pub_rgb.publish(rgb_msg);
 					pub_depth.publish(depth_msg);
 				}
