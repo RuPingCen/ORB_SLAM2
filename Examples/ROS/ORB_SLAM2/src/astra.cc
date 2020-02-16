@@ -24,7 +24,15 @@
 #include<fstream>
 #include<chrono>
 
-#include<ros/ros.h>
+#include <ros/ros.h>
+#include <ros/spinner.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <nav_msgs/Path.h>
+#include <tf/transform_broadcaster.h>
+#include <cv_bridge/cv_bridge.h>
+
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
@@ -39,7 +47,20 @@ using namespace std;
 class ImageGrabber
 {
 public:
-    ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
+	ros::NodeHandle nh;
+	ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath;
+	size_t mcounter=0;	 
+	nav_msgs::Path  camerapath;
+
+    ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
+    {
+	   //创建ROS的发布节点
+
+	   pub_rgb= nh.advertise<sensor_msgs::Image> ("RGB/Image", 10); 
+	   pub_depth= nh.advertise<sensor_msgs::Image> ("Depth/Image", 10); 
+	   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
+	   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
+    }
 
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
 
@@ -65,7 +86,7 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_color", 10);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 10);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/camera/depth/image", 10);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
@@ -109,7 +130,63 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
         return;
     }
 
-    mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    bool  isKeyFrame =true;
+    cv::Mat Tcw;
+    Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    if (!Tcw.empty())
+	{
+				  //cv::Mat Twc =Tcw.inv();
+				  //cv::Mat TWC=orbslam->mpTracker->mCurrentFrame.mTcw.inv();  
+				  cv::Mat RWC= Tcw.rowRange(0,3).colRange(0,3);  
+				  cv::Mat tWC= Tcw.rowRange(0,3).col(3);
+
+				  tf::Matrix3x3 M(RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
+							      RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
+							      RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2));
+				  tf::Vector3 V(tWC.at<float>(0), tWC.at<float>(1), tWC.at<float>(2));
+				  
+				 tf::Quaternion q;
+				  M.getRotation(q);
+				  
+			      tf::Pose tf_pose(q,V);
+				  
+				   double roll,pitch,yaw;
+				   M.getRPY(roll,pitch,yaw);
+				   //cout<<"roll: "<<roll<<"  pitch: "<<pitch<<"  yaw: "<<yaw;
+				  // cout<<"    t: "<<tWC.at<float>(0)<<"   "<<tWC.at<float>(1)<<"    "<<tWC.at<float>(2)<<endl;
+				   
+				   if(roll == 0 || pitch==0 || yaw==0)
+					return ;
+				   // ------
+				  
+				  std_msgs::Header header ;
+				  header.stamp =msgRGB->header.stamp;
+				  header.seq = msgRGB->header.seq;
+				  header.frame_id="camera";
+
+				  //cout<<"depth type: "<< depth. type()<<endl;
+				  
+				  sensor_msgs::Image::ConstPtr rgb_msg = msgRGB;
+				  sensor_msgs::Image::ConstPtr depth_msg=msgD;
+ 
+				 geometry_msgs::PoseStamped tcw_msg;
+				 tcw_msg.header=header;
+				 tf::poseTFToMsg(tf_pose, tcw_msg.pose);
+				  
+				 camerapath.header =header;
+				 camerapath.poses.push_back(tcw_msg);
+				 pub_camerapath.publish(camerapath);  //相机轨迹
+				 if( isKeyFrame)
+				{
+                                        pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
+					pub_rgb.publish(rgb_msg);
+					pub_depth.publish(depth_msg);
+				}
+	}
+	else
+	{
+	  cout<<"Twc is empty ..."<<endl;
+	}
 }
 
 

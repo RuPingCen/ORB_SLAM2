@@ -88,12 +88,30 @@ target_link_libraries(Stereo
 ${LIBS}
 )
 
+# Node for Indemind camera
+rosbuild_add_executable(indemind
+src/indemind.cc
+)
+
+target_link_libraries(indemind
+${LIBS}
+)
+
 # Node for RGB-D camera
 rosbuild_add_executable(RGBD
 src/ros_rgbd.cc
 )
 
 target_link_libraries(RGBD
+${LIBS}
+)
+
+# Node for Astra RGB-D camera
+rosbuild_add_executable(astra
+src/astra.cc
+)
+
+target_link_libraries(astra
 ${LIBS}
 )
 

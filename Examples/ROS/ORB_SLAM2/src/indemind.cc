@@ -49,18 +49,19 @@ using namespace std;
 class ImageGrabber
 {
 public:
-  ros::NodeHandle nh;
- ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath;
-   size_t mcounter=0;	 
-    nav_msgs::Path  camerapath;
+	ros::NodeHandle nh;
+	ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath;
+	size_t mcounter=0;	 
+	nav_msgs::Path  camerapath;
+	
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
 	{
-	      //创建ROS的发布节点
-                  
-                   pub_rgb= nh.advertise<sensor_msgs::Image> ("RGBImage", 10); 
-				   pub_depth= nh.advertise<sensor_msgs::Image> ("DepthImage", 10); 
-				   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
-				   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
+	   //创建ROS的发布节点
+
+	   pub_rgb= nh.advertise<sensor_msgs::Image> ("Left/Image", 10); 
+	   pub_depth= nh.advertise<sensor_msgs::Image> ("Right/Image", 10); 
+	   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
+	   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
 	}
 
     void GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const sensor_msgs::Image::ConstPtr msgRight);
@@ -130,8 +131,8 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/indemind/left/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/indemind/right/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub,right_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
@@ -177,7 +178,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
     }
     
     
-	bool  isKeyFrame =false;
+	bool  isKeyFrame =true;
 	cv::Mat Tcw;
 	
     if(do_rectify)
@@ -186,6 +187,9 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
         Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+// 		cv::imshow("left",imLeft);
+// 		cv::imshow("right",imRight);
+// 		cv::waitKey(1);
     }
     else
     {
@@ -234,13 +238,14 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
 				 camerapath.header =header;
 				 camerapath.poses.push_back(tcw_msg);
 				  
-				  pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
+				 
 				 pub_camerapath.publish(camerapath);  //相机轨迹
-				  if( isKeyFrame)
-				    {
-						pub_rgb.publish(rgb_msg);
-						pub_depth.publish(depth_msg);	
-					}
+				 if( isKeyFrame)
+				{
+					pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
+					pub_rgb.publish(rgb_msg);
+					pub_depth.publish(depth_msg);
+				}
 	}
 	else
 	{
