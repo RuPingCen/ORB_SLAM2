@@ -1,3 +1,13 @@
+# 添加位姿发布接口
+
+1.修改并编译通过了ORB-SLAM2在ROS环境中运行的节点
+
+2.在节点中增加了关键帧输出接口
+
+3.增加了位姿发布话题
+
+详细的教程请参考csdn博客系列教程：[ORB-SLAM2 在线构建稠密点云](https://blog.csdn.net/crp997576280/article/details/88899163)
+
 # ORB-SLAM2
 **Authors:** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/), [Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/), [J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) and [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
