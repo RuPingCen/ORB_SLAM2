@@ -165,10 +165,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 				  header.frame_id="camera";
 
 				  //cout<<"depth type: "<< depth. type()<<endl;
-				  
-				  sensor_msgs::Image::ConstPtr rgb_msg = msgRGB;
-				  sensor_msgs::Image::ConstPtr depth_msg=msgD;
- 
+				   
 				 geometry_msgs::PoseStamped tcw_msg;
 				 tcw_msg.header=header;
 				 tf::poseTFToMsg(tf_pose, tcw_msg.pose);
@@ -179,8 +176,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 				 if( isKeyFrame)
 				{
 					pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
-					pub_rgb.publish(rgb_msg);
-					pub_depth.publish(depth_msg);
+					pub_rgb.publish(msgRGB);
+					pub_depth.publish(msgD);
 				}
 	}
 	else
