@@ -186,14 +186,14 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
         cv::Mat imLeft, imRight;
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-        Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+        Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec(),isKeyFrame);
 // 		cv::imshow("left",imLeft);
 // 		cv::imshow("right",imRight);
 // 		cv::waitKey(1);
     }
     else
     {
-        Tcw=mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
+        Tcw=mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec(),isKeyFrame);
     }
      
     if (!Tcw.empty())

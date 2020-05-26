@@ -96,10 +96,9 @@ int main(int argc, char **argv)
 
     // Stop all threads
     SLAM.Shutdown();
-
-    // Save camera trajectory
+    SLAM.SaveTrajectoryTUM("FrameTrajectory.txt");
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-
+       // Save camera trajectory
     ros::shutdown();
 
     return 0;
@@ -130,46 +129,39 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
         return;
     }
 
-    bool  isKeyFrame =true;
+    bool  isKeyFrame =false;
     cv::Mat Tcw;
     Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec(),isKeyFrame);
+	   //  Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
     if (!Tcw.empty())
 	{
-				  //cv::Mat Twc =Tcw.inv();
-				  //cv::Mat TWC=orbslam->mpTracker->mCurrentFrame.mTcw.inv();  
-				  cv::Mat RWC= Tcw.rowRange(0,3).colRange(0,3);  
-				  cv::Mat tWC= Tcw.rowRange(0,3).col(3);
+					cv::Mat Twc =Tcw.inv();
+					cv::Mat RWC= Twc.rowRange(0,3).colRange(0,3);  
+					cv::Mat tWC=  Twc.rowRange(0,3).col(3);
 
-				  tf::Matrix3x3 M(RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
-							      RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
-							      RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2));
-				  tf::Vector3 V(tWC.at<float>(0), tWC.at<float>(1), tWC.at<float>(2));
-				  
-				 tf::Quaternion q;
-				  M.getRotation(q);
-				  
-			      tf::Pose tf_pose(q,V);
-				  
-				   double roll,pitch,yaw;
-				   M.getRPY(roll,pitch,yaw);
-				   //cout<<"roll: "<<roll<<"  pitch: "<<pitch<<"  yaw: "<<yaw;
-				  // cout<<"    t: "<<tWC.at<float>(0)<<"   "<<tWC.at<float>(1)<<"    "<<tWC.at<float>(2)<<endl;
+					Eigen::Matrix<double,3,3> eigMat ;
+					eigMat <<RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
+									RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
+									RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2);
+					Eigen::Quaterniond q(eigMat);
+ 
+				 geometry_msgs::PoseStamped tcw_msg; 					
+                 tcw_msg.pose.position.x=tWC.at<float>(0);
+                 tcw_msg.pose.position.y=tWC.at<float>(1);			 
+                 tcw_msg.pose.position.z=tWC.at<float>(2);
+				 
+				tcw_msg.pose.orientation.x=q.x();
+				tcw_msg.pose.orientation.y=q.y();
+				tcw_msg.pose.orientation.z=q.z();
+				tcw_msg.pose.orientation.w=q.w();
 				   
-				   if(roll == 0 || pitch==0 || yaw==0)
-					return ;
-				   // ------
-				  
 				  std_msgs::Header header ;
 				  header.stamp =msgRGB->header.stamp;
 				  header.seq = msgRGB->header.seq;
-				  header.frame_id="camera";
-
-				  //cout<<"depth type: "<< depth. type()<<endl;
-				   
-				 geometry_msgs::PoseStamped tcw_msg;
+				  header.frame_id="world";
+ 
 				 tcw_msg.header=header;
-				 tf::poseTFToMsg(tf_pose, tcw_msg.pose);
-				  
+				 
 				 camerapath.header =header;
 				 camerapath.poses.push_back(tcw_msg);
 				 pub_camerapath.publish(camerapath);  //相机轨迹

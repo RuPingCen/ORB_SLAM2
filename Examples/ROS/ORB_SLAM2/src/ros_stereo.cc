@@ -30,6 +30,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <cv_bridge/cv_bridge.h>
 
@@ -50,7 +51,7 @@ class ImageGrabber
 {
 public:
   ros::NodeHandle nh;
- ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath;
+ ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath,pub_odom;
    size_t mcounter=0;	 
     nav_msgs::Path  camerapath;
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
@@ -60,6 +61,7 @@ public:
                    pub_rgb= nh.advertise<sensor_msgs::Image> ("RGBImage", 10); 
 				   pub_depth= nh.advertise<sensor_msgs::Image> ("DepthImage", 10); 
 				   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
+				   pub_odom= nh.advertise<nav_msgs::Odometry> ("Odometry", 10); 
 				   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
 	}
 
@@ -144,10 +146,12 @@ int main(int argc, char **argv)
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory_TUM_Format.txt");
     SLAM.SaveTrajectoryTUM("FrameTrajectory_TUM_Format.txt");
+	
+	//SLAM.SaveKeyFrameTrajectoryKITTI("KeyFrameTrajectory_KITTI_Format.txt");
     SLAM.SaveTrajectoryKITTI("FrameTrajectory_KITTI_Format.txt");
 
     ros::shutdown();
-
+ 
     return 0;
 }
 
@@ -189,33 +193,52 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
     }
     else
     {
-        Tcw=mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
+        //Tcw=mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
+		Tcw=mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec(),isKeyFrame);
     }
-     
+ 
     if (!Tcw.empty())
 	{
-				  //cv::Mat Twc =Tcw.inv();
+					cv::Mat Twc =Tcw.inv();
+					cv::Mat RWC= Twc.rowRange(0,3).colRange(0,3);  
+					cv::Mat tWC=  Twc.rowRange(0,3).col(3);
 				  //cv::Mat TWC=orbslam->mpTracker->mCurrentFrame.mTcw.inv();  
-				  cv::Mat RWC= Tcw.rowRange(0,3).colRange(0,3);  
-				  cv::Mat tWC= Tcw.rowRange(0,3).col(3);
-
-				  tf::Matrix3x3 M(RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
-							      RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
-							      RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2));
-				  tf::Vector3 V(tWC.at<float>(0), tWC.at<float>(1), tWC.at<float>(2));
+				  //cv::Mat RWC= Tcw.rowRange(0,3).colRange(0,3).t();//Tcw.rowRange(0,3).colRange(0,3);  
+				  //cv::Mat tWC=  -RWC*Tcw.rowRange(0,3).col(3);//Tcw.rowRange(0,3).col(3);
 				  
-				 tf::Quaternion q;
-				  M.getRotation(q);
-				  
-			      tf::Pose tf_pose(q,V);
-				  
-				   double roll,pitch,yaw;
-				   M.getRPY(roll,pitch,yaw);
-				   //cout<<"roll: "<<roll<<"  pitch: "<<pitch<<"  yaw: "<<yaw;
-				  // cout<<"    t: "<<tWC.at<float>(0)<<"   "<<tWC.at<float>(1)<<"    "<<tWC.at<float>(2)<<endl;
-				   
-				   if(roll == 0 || pitch==0 || yaw==0)
-					return ;
+					Eigen::Matrix<double,3,3> eigMat ;
+					eigMat <<RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
+									RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
+									RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2);
+					Eigen::Quaterniond q(eigMat);
+ 
+				 geometry_msgs::PoseStamped tcw_msg; 					
+                 tcw_msg.pose.position.x=tWC.at<float>(0);
+                 tcw_msg.pose.position.y=tWC.at<float>(1);			 
+                 tcw_msg.pose.position.z=tWC.at<float>(2);
+				 
+				tcw_msg.pose.orientation.x=q.x();
+				tcw_msg.pose.orientation.y=q.y();
+				tcw_msg.pose.orientation.z=q.z();
+				tcw_msg.pose.orientation.w=q.w();
+				 
+// 				  tf::Matrix3x3 M(RWC.at<float>(0,0),RWC.at<float>(0,1),RWC.at<float>(0,2),
+// 							      RWC.at<float>(1,0),RWC.at<float>(1,1),RWC.at<float>(1,2),
+// 							      RWC.at<float>(2,0),RWC.at<float>(2,1),RWC.at<float>(2,2));
+// 				  tf::Vector3 V(tWC.at<float>(0), tWC.at<float>(1), tWC.at<float>(2));
+// 				  
+// 				 tf::Quaternion q;
+// 				  M.getRotation(q);
+// 				  
+// 			      tf::Pose tf_pose(q,V);
+// 				  
+// 				   double roll,pitch,yaw;
+// 				   M.getRPY(roll,pitch,yaw);
+// 				   cout<<"roll: "<<roll<<"  pitch: "<<pitch<<"  yaw: "<<yaw;
+// 				   cout<<"    t: "<<tWC.at<float>(0)<<"   "<<tWC.at<float>(1)<<"    "<<tWC.at<float>(2)<<endl;
+// 				   
+// 				   if(roll == 0 || pitch==0 || yaw==0)
+// 					return ;
 				   // ------
 				  
 				  std_msgs::Header header ;
@@ -227,15 +250,55 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
 				  sensor_msgs::Image::ConstPtr rgb_msg = msgLeft;
 				  sensor_msgs::Image::ConstPtr depth_msg=msgRight;
 				  
-				 geometry_msgs::PoseStamped tcw_msg;
+				 //geometry_msgs::PoseStamped tcw_msg; 
 				 tcw_msg.header=header;
-				 tf::poseTFToMsg(tf_pose, tcw_msg.pose);
+				 //tf::poseTFToMsg(tf_pose, tcw_msg.pose);
+				 
+				 
+ 
+				 // odometry information
+				 nav_msgs::Odometry odom_msg;
+				odom_msg.pose.pose.position.x=tWC.at<float>(0);
+                 odom_msg.pose.pose.position.y=tWC.at<float>(1);			 
+                 odom_msg.pose.pose.position.z=tWC.at<float>(2);
+				 
+				odom_msg.pose.pose.orientation.x=q.x();
+				odom_msg.pose.pose.orientation.y=q.y();
+				odom_msg.pose.pose.orientation.z=q.z();
+				odom_msg.pose.pose.orientation.w=q.w();
+				
+				odom_msg.header=header;
+				odom_msg.child_frame_id="base_link"; 
+// 				 // 发布TF 变换
+// 				static tf::TransformBroadcaster odom_broadcaster;  //定义tf对象
+// 				geometry_msgs::TransformStamped odom_trans;  //创建一个tf发布需要使用的TransformStamped类型消息
+// 				geometry_msgs::Quaternion odom_quat;   //四元数变量
+//   
+// 				//里程计的偏航角需要转换成四元数才能发布
+// 				odom_quat = tf::createQuaternionMsgFromRollPitchYaw ( roll,  pitch,  yaw);
+// 				//载入坐标（tf）变换时间戳
+// 				odom_trans.header.stamp = msgLeft->header.stamp;
+// 				odom_trans.header.seq = msgLeft->header.seq;
+// 				//发布坐标变换的父子坐标系
+// 				odom_trans.header.frame_id = "odom";     
+// 				odom_trans.child_frame_id = "camera";       
+// 				//tf位置数据：x,y,z,方向
+// 				odom_trans.transform.translation.x = tWC.at<float>(0);
+// 				odom_trans.transform.translation.y = tWC.at<float>(1);
+// 				odom_trans.transform.translation.z = tWC.at<float>(2);
+// 				odom_trans.transform.rotation = odom_quat;        
+// 				//发布tf坐标变化
+// 				odom_broadcaster.sendTransform(odom_trans);
+				  
+				
 				  
 				 camerapath.header =header;
 				 camerapath.poses.push_back(tcw_msg);
-				  
-				  pub_tcw.publish(tcw_msg);	                      //Tcw位姿信息
-				 pub_camerapath.publish(camerapath);  //相机轨迹
+				 //Tcw位姿信息
+				 pub_tcw.publish(tcw_msg);	                
+				 pub_odom.publish(odom_msg);	  
+				 //相机轨迹
+				 pub_camerapath.publish(camerapath);  
 				  if( isKeyFrame)
 				    {
 						pub_rgb.publish(rgb_msg);
