@@ -1,0 +1,17 @@
+
+rosbag play rgbd_dataset_freiburg1_room.bag /camera/rgb/image_color:=/camera/rgb/image_raw /camera/depth/image:=/camera/depth/image
+
+roslaunch pointcloud_mapping tum1.launch
+
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 astra Vocabulary/ORBvoc.txt Examples/ROS/ORB_SLAM2/TUM1_ROSbag.yaml
+
+
+roslaunch indemind_stereo stereo.launch
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 indemind Vocabulary/ORBvoc.txt Examples/Stereo/INDEMIND.yaml true
+
+
+
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml false
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI04-12.yaml false
