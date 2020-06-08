@@ -17,7 +17,9 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "Viewer.h"
 #include <pangolin/pangolin.h>
 
@@ -123,7 +125,7 @@ void Viewer::Run()
             mpSystem->DeactivateLocalizationMode();
             bLocalizationMode = false;
         }
-
+ 
         d_cam.Activate(s_cam);
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
@@ -131,13 +133,13 @@ void Viewer::Run()
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
-
+       
         pangolin::FinishFrame();
-
+ 
         cv::Mat im = mpFrameDrawer->DrawFrame();
         cv::imshow("ORB-SLAM2: Current Frame",im);
-        cv::waitKey(mT);
-
+       cv::waitKey(mT);
+         
         if(menuReset)
         {
             menuShowGraph = true;

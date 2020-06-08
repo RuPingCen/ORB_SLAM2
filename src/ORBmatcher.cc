@@ -1469,6 +1469,217 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     return nmatches;
 }
 
+/**
+ * @brief 对上一帧每个3D点通过投影作为光流跟踪的初始值。从而实现当前帧CurrentFrame对上一帧LastFrame 3D点的匹配跟踪。用于tracking中前后帧跟踪
+ *
+ * 上一帧中包含了MapPoints，对这些MapPoints进行tracking，由此增加当前帧的MapPoints \n
+ * 1. 将上一帧的MapPoints投影到当前帧(根据速度模型可以估计当前帧的Tcw)
+ * 2. 根据光流进行匹配，以及最终的方向投票机制进行剔除
+ * @param  CurrentFrame 当前帧
+ * @param  LastFrame    上一帧
+ * @return              成功匹配的数量
+ * @see SearchByProjection()
+ */
+int ORBmatcher::SearchByOpticalFlow(Frame &CurrentFrame, const Frame &LastFrame)
+{
+    const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
+    const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
+    const cv::Mat twc = -Rcw.t()*tcw;
+
+    // use LK flow to estimate points in the right image
+    std::vector<cv::Point2f> kps_last, kps_current;
+    vector<int> vMapPointIdx;//第几个有效点对应第几个特征点
+    vMapPointIdx.reserve(LastFrame.N);
+    
+    for(int i=0; i<LastFrame.N; i++)//对上以帧的每个特征点
+    {
+        MapPoint* pMP = LastFrame.mvpMapPoints[i];//获取地标
+
+        if(pMP)//如果特征点对应的地标不为空
+        {
+            if(!LastFrame.mvbOutlier[i])//并且不是外点
+            {
+                // Project
+	        // 对上一帧有效的MapPoints进行跟踪
+                cv::Mat x3Dw = pMP->GetWorldPos();//获取世界坐标
+                cv::Mat x3Dc = Rcw*x3Dw+tcw;//得到当前相机下的相机坐标
+
+                const float xc = x3Dc.at<float>(0);
+                const float yc = x3Dc.at<float>(1);
+                const float invzc = 1.0/x3Dc.at<float>(2);//逆深度
+
+                if(invzc<0)
+                    continue;
+
+                float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;//地标点在当前相机的像素坐标系
+                float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
+
+                if(u<CurrentFrame.mnMinX || u>CurrentFrame.mnMaxX)//检查边界
+                    continue;
+                if(v<CurrentFrame.mnMinY || v>CurrentFrame.mnMaxY)
+                    continue;
+
+	        vMapPointIdx.push_back(i);//为特征点添加索引
+		kps_last.push_back(LastFrame.mvKeys[i].pt);
+		kps_current.push_back(cv::Point2f(u, v));
+            }
+        }
+    }
+
+    std::vector<uchar> status;
+    cv::Mat error;
+    cv::calcOpticalFlowPyrLK( LastFrame.mLeftImage,CurrentFrame.mLeftImage, kps_last,
+			      kps_current, status, error, cv::Size(11, 11), 3,
+			      cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,0.01),
+			      cv::OPTFLOW_USE_INITIAL_FLOW);
+
+    int num_good_pts = 0;
+    CurrentFrame.mvKeys.clear();
+    CurrentFrame.mvpMapPoints.clear();
+    
+    vector<cv::KeyPoint> prev_keypoints;//用于显示//上一帧对应的关键点
+    
+    for (size_t i = 0; i < status.size(); ++i) 
+    {
+        if (status[i]) 
+	{
+	    cv::KeyPoint  kp(kps_current[i], LastFrame.mvKeys[vMapPointIdx[i]].size, LastFrame.mvKeys[vMapPointIdx[i]].angle, 
+			     LastFrame.mvKeys[vMapPointIdx[i]].response,LastFrame.mvKeys[vMapPointIdx[i]].octave,
+			     LastFrame.mvKeys[vMapPointIdx[i]].class_id);
+	    
+	    CurrentFrame.mvKeys.push_back(kp);
+	    CurrentFrame.mvpMapPoints.push_back( LastFrame.mvpMapPoints[vMapPointIdx[i]]);//为当前帧添加MapPoint
+	    
+	    prev_keypoints.push_back(LastFrame.mvKeys[vMapPointIdx[i]]);//用于显示
+	    
+            num_good_pts++;
+        }
+    }
+
+    ////////////////////////////////////////////显示匹配/////////////////////////////////////////////
+//     cv::Mat outimg1,outimg2;
+//     cv::cvtColor ( CurrentFrame.left_img_, outimg1, CV_GRAY2BGR );
+//     cv::cvtColor ( LastFrame.left_img_, outimg2, CV_GRAY2BGR );
+// 
+//     vector<cv::DMatch> matches;
+//     matches.resize(prev_keypoints.size());
+//     for(unsigned int n=0;n< prev_keypoints.size();n++)
+//     {
+// 	  matches[n].queryIdx=n;
+// 	  matches[n].trainIdx=n;
+//     }
+//     cv::Mat img_match;//光流匹配点图
+//     cv::drawMatches( outimg2, prev_keypoints, outimg1, CurrentFrame.mvKeys, matches, img_match);
+//     cv::namedWindow("光流匹配点对",0);
+//     cv::imshow("光流匹配点对", img_match);
+//     cv::waitKey(10);
+    //////////////////////////////////////////////////////////////////
+
+    //////////////制作Frame中的数据////////////////////////////////////////////////
+     CurrentFrame.N = CurrentFrame.mvKeys.size();
+     CurrentFrame.mvbOutlier = vector<bool>(CurrentFrame.N,false);
+
+    // Undistort特征点，只对左目进行了矫正，（因为要求输入的图像已经进行极线校正？）
+    CurrentFrame.UndistortKeyPoints();
+    //设置非双目信息，我们在光流跟踪的时候仅仅利用左目去跟踪，并没有使用到右目的信息
+    CurrentFrame.mvuRight = vector<float>(CurrentFrame.N,-1.0f);
+    CurrentFrame.mvDepth = vector<float>(CurrentFrame.N,-1.0f);
+    // 计算双目间的匹配, 匹配成功的特征点会计算其深度
+
+    return num_good_pts;
+}
+ int ORBmatcher::SearchByOpticalFlow(Frame &CurrentFrame, KeyFrame *pKF)
+ {
+	   const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
+    const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
+    const cv::Mat twc = -Rcw.t()*tcw;
+
+    // use LK flow to estimate points in the right image
+    std::vector<cv::Point2f> kps_last, kps_current;
+    vector<int> vMapPointIdx;//第几个有效点对应第几个特征点
+    vMapPointIdx.reserve(pKF->N);
+ 
+    for(int i=0; i<pKF->N; i++)//对上以帧的每个特征点
+    {
+        MapPoint* pMP = pKF->mvpMapPoints[i];//获取地标
+
+        if(pMP)//如果特征点对应的地标不为空
+        {
+          //  if(!pKF->mvbOutlier[i])//并且不是外点
+            {
+                // Project
+	        // 对上一帧有效的MapPoints进行跟踪
+                cv::Mat x3Dw = pMP->GetWorldPos();//获取世界坐标
+                cv::Mat x3Dc = Rcw*x3Dw+tcw;//得到当前相机下的相机坐标
+
+                const float xc = x3Dc.at<float>(0);
+                const float yc = x3Dc.at<float>(1);
+                const float invzc = 1.0/x3Dc.at<float>(2);//逆深度
+
+                if(invzc<0)
+                    continue;
+
+                float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;//地标点在当前相机的像素坐标系
+                float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
+
+                if(u<CurrentFrame.mnMinX || u>CurrentFrame.mnMaxX)//检查边界
+                    continue;
+                if(v<CurrentFrame.mnMinY || v>CurrentFrame.mnMaxY)
+                    continue;
+
+	        vMapPointIdx.push_back(i);//为特征点添加索引
+		kps_last.push_back(pKF->mvKeys[i].pt);
+		kps_current.push_back(cv::Point2f(u, v));
+            }
+        }
+    }
+  
+    std::vector<uchar> status;
+    cv::Mat error;
+ 
+   // cv::calcOpticalFlowPyrLK( LastFrame.mLeftImage,CurrentFrame.mLeftImage, kps_last,
+	//		      kps_current, status, error, cv::Size(11, 11), 8,
+	//		      cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,0.01),
+	//		      cv::OPTFLOW_USE_INITIAL_FLOW);
+ 
+    int num_good_pts = 0;
+    CurrentFrame.mvKeys.clear();
+    CurrentFrame.mvpMapPoints.clear();
+
+    vector<cv::KeyPoint> prev_keypoints;//用于显示//上一帧对应的关键点
+    
+    for (size_t i = 0; i < status.size(); ++i) 
+    {
+        if (status[i]) 
+		{
+			cv::KeyPoint  kp(kps_current[i], pKF->mvKeys[vMapPointIdx[i]].size, pKF->mvKeys[vMapPointIdx[i]].angle, 
+					pKF->mvKeys[vMapPointIdx[i]].response,pKF->mvKeys[vMapPointIdx[i]].octave,
+					pKF->mvKeys[vMapPointIdx[i]].class_id);
+			
+			CurrentFrame.mvKeys.push_back(kp);
+			CurrentFrame.mvpMapPoints.push_back( pKF->mvpMapPoints[vMapPointIdx[i]]);//为当前帧添加MapPoint
+			
+			prev_keypoints.push_back(pKF->mvKeys[vMapPointIdx[i]]);//用于显示
+			
+				num_good_pts++;
+        }
+    }
+ 
+ 
+    //////////////制作Frame中的数据////////////////////////////////////////////////
+     CurrentFrame.N = CurrentFrame.mvKeys.size();
+     CurrentFrame.mvbOutlier = vector<bool>(CurrentFrame.N,false);
+
+    // Undistort特征点，只对左目进行了矫正，（因为要求输入的图像已经进行极线校正？）
+    CurrentFrame.UndistortKeyPoints();
+    //设置非双目信息，我们在光流跟踪的时候仅仅利用左目去跟踪，并没有使用到右目的信息
+    CurrentFrame.mvuRight = vector<float>(CurrentFrame.N,-1.0f);
+    CurrentFrame.mvDepth = vector<float>(CurrentFrame.N,-1.0f);
+    // 计算双目间的匹配, 匹配成功的特征点会计算其深度
+
+    return num_good_pts;
+}
+ 
 int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
 {
     int nmatches = 0;

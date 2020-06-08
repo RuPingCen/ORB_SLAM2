@@ -58,7 +58,10 @@ public:
     // Project MapPoints using a Similarity Transformation and search matches.
     // Used in loop detection (Loop Closing)
      int SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th);
-
+	
+	 int SearchByOpticalFlow(Frame &CurrentFrame, const Frame &LastFrame);
+     int SearchByOpticalFlow(Frame &CurrentFrame, KeyFrame *pKF);
+	 
     // Search matches between MapPoints in a KeyFrame and ORB in a Frame.
     // Brute force constrained to ORB that belong to the same vocabulary node (at a certain level)
     // Used in Relocalisation and Loop Detection

@@ -19,7 +19,9 @@
 */
 
 
-
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "System.h"
 #include "Converter.h"
 #include <thread>
@@ -204,13 +206,14 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
         mbReset = false;
     }
     }
-
+	 
     cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft,imRight,timestamp,isKeyframe);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+ 
     return Tcw;
 }
 cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp)

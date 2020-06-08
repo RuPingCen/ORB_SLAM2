@@ -18,7 +18,9 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include<iostream>
 #include<algorithm>
 #include<fstream>
@@ -63,7 +65,7 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imLeft, imRight;
-    for(int ni=0; ni<nImages; ni++)
+    for(int ni=0; ni<9; ni++)
     {
         // Read left and right images from file
         imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
@@ -84,7 +86,9 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the images to the SLAM system
-        SLAM.TrackStereo(imLeft,imRight,tframe);
+        //SLAM.TrackStereo(imLeft,imRight,tframe);
+		bool isKeyFrame;
+		SLAM.TrackStereo(imLeft,imRight,tframe,isKeyFrame);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -105,8 +109,11 @@ int main(int argc, char **argv)
 
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
+		
+// 		cv::imshow("TEST_Left",imLeft);
+// 		cv::waitKey(100);
     }
-
+	while(1);
     // Stop all threads
     SLAM.Shutdown();
 

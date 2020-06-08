@@ -132,6 +132,8 @@ protected:
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
     void UpdateLastFrame();
+	
+	bool TrackWithLKOpticalFlowModel();
     bool TrackWithMotionModel();
 
     bool Relocalization();

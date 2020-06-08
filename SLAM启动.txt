@@ -15,3 +15,9 @@ rosrun ORB_SLAM2 indemind Vocabulary/ORBvoc.txt Examples/Stereo/INDEMIND.yaml tr
 
 rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml false
 rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI04-12.yaml false
+
+
+
+1、帧与帧之间的光流跟踪基本不能实现很好的跟踪（），特征点会越变越少，从参考关键帧k帧到k+1帧时候，以及从K+1帧时刻到K+2帧时刻这样特征点会越来越少.  修改位跟踪参考关键帧会不会好一点。或者补充特征点？
+
+2、但是每次跟踪参考关键帧时会造成两帧之间距离变大，有可能会影响跟踪精度。

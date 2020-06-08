@@ -187,13 +187,14 @@ public:
 
     static bool mbInitialComputations;
 
-
-private:
+    cv::Mat mLeftImage,mRightImage;
 
     // Undistort keypoints given OpenCV distortion parameters.
     // Only for the RGB-D case. Stereo must be already rectified!
     // (called in the constructor).
     void UndistortKeyPoints();
+	void ExtractORBFeatures(const int eSensor);
+private:
 
     // Computes image bounds for the undistorted image (called in the constructor).
     void ComputeImageBounds(const cv::Mat &imLeft);
