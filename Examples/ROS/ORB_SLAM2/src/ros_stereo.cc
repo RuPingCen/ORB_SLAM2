@@ -243,8 +243,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
 				  std_msgs::Header header ;
 				  header.stamp =msgLeft->header.stamp;
 				  header.seq = msgLeft->header.seq;
-				  header.frame_id="camera";
-				  //cout<<"depth type: "<< depth. type()<<endl;
+				  header.frame_id="world";
 				  
 				  sensor_msgs::Image::ConstPtr rgb_msg = msgLeft;
 				  sensor_msgs::Image::ConstPtr depth_msg=msgRight;

@@ -17,6 +17,7 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
+ 
 
 
 #include<iostream>
@@ -30,8 +31,8 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
-#include <cv_bridge/cv_bridge.h>
 
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
@@ -48,17 +49,17 @@ class ImageGrabber
 {
 public:
 	ros::NodeHandle nh;
-	ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath;
+	ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath,pub_odom;
 	size_t mcounter=0;	 
 	nav_msgs::Path  camerapath;
 
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
     {
 	   //创建ROS的发布节点
-
 	   pub_rgb= nh.advertise<sensor_msgs::Image> ("RGB/Image", 10); 
 	   pub_depth= nh.advertise<sensor_msgs::Image> ("Depth/Image", 10); 
 	   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
+	   pub_odom= nh.advertise<nav_msgs::Odometry> ("Odometry", 10); 
 	   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
     }
 
@@ -162,8 +163,23 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
  
 				 tcw_msg.header=header;
 				 
+				 // odometry information
+				 nav_msgs::Odometry odom_msg;
+				odom_msg.pose.pose.position.x=tWC.at<float>(0);
+                 odom_msg.pose.pose.position.y=tWC.at<float>(1);			 
+                 odom_msg.pose.pose.position.z=tWC.at<float>(2);
+				 
+				odom_msg.pose.pose.orientation.x=q.x();
+				odom_msg.pose.pose.orientation.y=q.y();
+				odom_msg.pose.pose.orientation.z=q.z();
+				odom_msg.pose.pose.orientation.w=q.w();
+				
+				odom_msg.header=header;
+				odom_msg.child_frame_id="base_link"; 
+				
 				 camerapath.header =header;
 				 camerapath.poses.push_back(tcw_msg);
+				  pub_odom.publish(odom_msg);	  
 				 pub_camerapath.publish(camerapath);  //相机轨迹
 				 if( isKeyFrame)
 				{
