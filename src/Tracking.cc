@@ -767,38 +767,35 @@ void Tracking::Track(bool& isKeyframe)
             // Clean VO matches
 			if(!bOpticalFlowOK)
 			{
-				for(int i=0; i<mCurrentFrame.N; i++)
-				{
-					MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
-					if(pMP)
-						if(pMP->Observations()<1)
-						{
-							mCurrentFrame.mvbOutlier[i] = false;
-							mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
-						}
-				}
-			}
+					for(int i=0; i<mCurrentFrame.N; i++)
+					{
+						MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
+						if(pMP)
+							if(pMP->Observations()<1)
+							{
+								mCurrentFrame.mvbOutlier[i] = false;
+								mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+							}
+					}
 
-            // Delete temporal MapPoints
-            for(list<MapPoint*>::iterator lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit!=lend; lit++)
-            {
-                MapPoint* pMP = *lit;
-                delete pMP;
-            }
-            mlpTemporalPoints.clear();
-			 
-            // Check if we need to insert a new keyframe
-            if(NeedNewKeyFrame())
-			{
-				cout<<"Create New KeyFrame ..."<<endl;
-			 CreateNewKeyFrame();
-			 cout<<"Code 1.1  ..."<<endl;
-			 isKeyframe=true;
-			}
-			else
-			 isKeyframe=false;
-                
-					
+					// Delete temporal MapPoints
+					for(list<MapPoint*>::iterator lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit!=lend; lit++)
+					{
+						MapPoint* pMP = *lit;
+						delete pMP;
+					}
+					mlpTemporalPoints.clear();
+
+					// Check if we need to insert a new keyframe
+					if(NeedNewKeyFrame())
+					{
+						cout<<"Create New KeyFrame ..."<<endl;
+						CreateNewKeyFrame();
+						isKeyframe=true;
+					}
+					else
+						isKeyframe=false;
+			}	
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -821,12 +818,11 @@ void Tracking::Track(bool& isKeyframe)
                 return;
             }
         }
-				 cout<<"Code 1.2  ..."<<endl;		 
+ 
         if(!mCurrentFrame.mpReferenceKF)
             mCurrentFrame.mpReferenceKF = mpReferenceKF;
-		 		 cout<<"Code 1.3 ..."<<endl;
-        mLastFrame = Frame(mCurrentFrame);
-				 cout<<"Code 1.4  ..."<<endl;			 
+ 
+        mLastFrame = Frame(mCurrentFrame); 
     }
 
     // Store frame pose information to retrieve the complete camera trajectory afterwards.

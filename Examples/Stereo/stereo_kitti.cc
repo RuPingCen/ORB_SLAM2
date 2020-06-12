@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imLeft, imRight;
-    for(int ni=0; ni<9; ni++)
+    for(int ni=0; ni<nImages; ni++)
     {
         // Read left and right images from file
         imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
@@ -107,13 +107,13 @@ int main(int argc, char **argv)
         else if(ni>0)
             T = tframe-vTimestamps[ni-1];
 
-        if(ttrack<T)
-            usleep((T-ttrack)*1e6);
+//         if(ttrack<T)
+//             usleep((T-ttrack)*1e6);
 		
 // 		cv::imshow("TEST_Left",imLeft);
 // 		cv::waitKey(100);
     }
-	while(1);
+	 
     // Stop all threads
     SLAM.Shutdown();
 
