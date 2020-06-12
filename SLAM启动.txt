@@ -1,21 +1,43 @@
+V1.0.0 添加了RGBD-双目 单目的ROS接口 发布相机的位姿、轨迹数据到ROS topic
+	可配合 pointcloud_mapping 包实现RGBD模式下建图（在Astra相机和TUM数据上测试通过）
+	可配合 pointcloud_mapping 、elas 包实现双目模式下建图（KITTI数据集上测试通过）
 
+
+RGBD数据：（TUM）
 rosbag play rgbd_dataset_freiburg1_room.bag /camera/rgb/image_color:=/camera/rgb/image_raw /camera/depth/image:=/camera/depth/image
-
-roslaunch pointcloud_mapping tum1.launch
 
 export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
 rosrun ORB_SLAM2 astra Vocabulary/ORBvoc.txt Examples/ROS/ORB_SLAM2/TUM1_ROSbag.yaml
 
+roslaunch pointcloud_mapping tum1.launch
+
+真实相机运行：（RGB-D）
+roslaunch astra_launch astra.launch
+
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 astra Vocabulary/ORBvoc.txt Examples/ROS/ORB_SLAM2/Astra.yaml
+
+roslaunch pointcloud_mapping astra.launch
+
+
+
+
+双目：（KITTI）
 
 roslaunch indemind_stereo stereo.launch
 export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
 rosrun ORB_SLAM2 indemind Vocabulary/ORBvoc.txt Examples/Stereo/INDEMIND.yaml true
+ 
 
-
+roslaunch publish_image_datasets publish_kitti.launch 
 
 rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml false
 rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI04-12.yaml false
 
+roslaunch elas_ros kitti_no_rviz.launch
+roslaunch pointcloud_mapping kitti.launch
+
+ 
 
 
 1、帧与帧之间的光流跟踪基本不能实现很好的跟踪（），特征点会越变越少，从参考关键帧k帧到k+1帧时候，以及从K+1帧时刻到K+2帧时刻这样特征点会越来越少.  修改位跟踪参考关键帧会不会好一点。或者补充特征点？
