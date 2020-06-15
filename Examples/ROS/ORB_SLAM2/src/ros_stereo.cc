@@ -188,7 +188,8 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
         cv::Mat imLeft, imRight;
         cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
         cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-        Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+        //Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+		Tcw=mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec(),isKeyFrame);
     }
     else
     {
@@ -291,14 +292,14 @@ void ImageGrabber::GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const s
 				
 				  
 				 camerapath.header =header;
-				 camerapath.poses.push_back(tcw_msg);
-				 //Tcw位姿信息
-				 pub_tcw.publish(tcw_msg);	                
+				 camerapath.poses.push_back(tcw_msg);     
 				 pub_odom.publish(odom_msg);	  
 				 //相机轨迹
 				 pub_camerapath.publish(camerapath);  
 				  if( isKeyFrame)
 				    {
+						 //Tcw位姿信息
+						pub_tcw.publish(tcw_msg);	           
 						pub_rgb.publish(rgb_msg);
 						pub_depth.publish(depth_msg);	
 					}
