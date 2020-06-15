@@ -1,3 +1,7 @@
+V2.0.0 添加光流跟踪在帧与帧之间的匹配中 加速ORB-SLAM2
+
+
+
 V1.0.0 添加了RGBD-双目 单目的ROS接口 发布相机的位姿、轨迹数据到ROS topic
 	可配合 pointcloud_mapping 包实现RGBD模式下建图（在Astra相机和TUM数据上测试通过）
 	可配合 pointcloud_mapping 、elas 包实现双目模式下建图（KITTI数据集上测试通过）
