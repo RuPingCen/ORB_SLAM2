@@ -41,7 +41,19 @@ rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI04-12.yaml fa
 roslaunch elas_ros kitti_no_rviz.launch
 roslaunch pointcloud_mapping kitti.launch
 
- 
+
+双目：（ZED）
+roslaunch zed_cpu_ros zed_cpu_ros.launch
+
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/ZED672x376.yaml true
+
+roslaunch elas_ros zed.launch
+
+roslaunch pointcloud_mapping zed.launch
+
+
+
 
 
 1、帧与帧之间的光流跟踪基本不能实现很好的跟踪（），特征点会越变越少，从参考关键帧k帧到k+1帧时候，以及从K+1帧时刻到K+2帧时刻这样特征点会越来越少.  修改位跟踪参考关键帧会不会好一点。或者补充特征点？
