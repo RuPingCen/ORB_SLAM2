@@ -56,8 +56,15 @@ void Viewer::Run()
     mbFinished = false;
     mbStopped = false;
 
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
+    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1524,768);
 
+	//用于显示图像信息
+	pangolin::GlTexture imageTexture(640,480,GL_RGB,false,0,GL_BGR,GL_UNSIGNED_BYTE);
+	pangolin::View& rgb_image = pangolin::Display("rgb")
+									//.SetBounds(0.4,0,0.6,0,1024.0f/768.0f)
+									//.SetLock(pangolin::LockRight, pangolin::LockTop);
+									.SetBounds(1/3.0f,1,0,2/3.0f,1280.0f/720.0f) //前面两个参数表示纵向宽度和窗口大小
+									.SetLock(pangolin::LockLeft, pangolin::LockTop);
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
 
@@ -87,7 +94,7 @@ void Viewer::Run()
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-    cv::namedWindow("ORB-SLAM2: Current Frame");
+    //cv::namedWindow("ORB-SLAM2: Current Frame");
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -132,12 +139,21 @@ void Viewer::Run()
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
 
-        pangolin::FinishFrame();
-
-        cv::Mat im = mpFrameDrawer->DrawFrame();
-        cv::imshow("ORB-SLAM2: Current Frame",im);
-        cv::waitKey(mT);
-
+ 			cv::Mat im = mpFrameDrawer->DrawFrame();
+			cv::Size dsize = cv::Size(640,480);
+			cv::Mat image2 = cv::Mat(dsize,im.type());
+			cv::resize(im, image2,dsize);
+//         cv::imshow("ORB-SLAM2: Current Frame",im);
+//         cv::waitKey(mT);
+       //向GPU装载图像
+		imageTexture.Upload(image2.data,GL_BGR,GL_UNSIGNED_BYTE);
+		
+		rgb_image.Activate();   //显示图像
+		glColor3f(1.0,1.0,1.0);   // 设置背景颜色
+		imageTexture.RenderToViewportFlipY(); //反转Ｙ轴
+		
+		pangolin::FinishFrame();
+		
         if(menuReset)
         {
             menuShowGraph = true;
