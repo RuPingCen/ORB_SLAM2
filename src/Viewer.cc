@@ -87,8 +87,8 @@ void Viewer::Run()
 	//第一个参数为按钮的名字，第二个为默认状态，第三个为最低值，第四个为最高
 	//pangolin::Var<int> a_int("menu.slam_speed",2,1,10);
 	//设计文本输出于面板
-	pangolin::Var<pangolin::OpenGlMatrix> rotation_matrix("menu.r", RotationMatrix());
-	pangolin::Var<pangolin::OpenGlMatrix::Translate> translation_vector("menu.t", TranslationVector());
+	//pangolin::Var<pangolin::OpenGlMatrix> rotation_matrix("menu.r", RotationMatrix());
+	//pangolin::Var<pangolin::OpenGlMatrix::Translate> translation_vector("menu.t", TranslationVector());
 	// https://blog.csdn.net/unlimitedai/article/details/96134857
 
 	

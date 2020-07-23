@@ -6,6 +6,7 @@
 
 3.增加了位姿发布话题
 
+
 详细的教程请参考csdn博客系列教程：[ORB-SLAM2 在线构建稠密点云](https://blog.csdn.net/crp997576280/article/details/88899163)
 
 # ORB-SLAM2
