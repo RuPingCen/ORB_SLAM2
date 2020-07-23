@@ -46,12 +46,22 @@ roslaunch pointcloud_mapping kitti.launch
 roslaunch zed_cpu_ros zed_cpu_ros.launch
 
 export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
-rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/ZED672x376.yaml true
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/ZED1280x720.yaml true
 
-roslaunch elas_ros zed.launch
+roslaunch elas_ros zed_no_rviz.launch
 
 roslaunch pointcloud_mapping zed.launch
 
+
+双目：（MindVision）
+ 
+
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/Mindvison.yaml true
+
+roslaunch elas_ros zed_no_rviz.launch
+
+roslaunch pointcloud_mapping zed.launch
 
 
 
