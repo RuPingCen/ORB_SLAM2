@@ -154,15 +154,7 @@ void Viewer::Run()
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
-<<<<<<< HEAD
-       
-        pangolin::FinishFrame();
- 
-        cv::Mat im = mpFrameDrawer->DrawFrame();
-        cv::imshow("ORB-SLAM2: Current Frame",im);
-       cv::waitKey(mT);
-         
-=======
+
        if(menuShowImage)
 	   {
  			cv::Mat im = mpFrameDrawer->DrawFrame();
@@ -185,7 +177,7 @@ void Viewer::Run()
 		    std::cout<<"save map to disk ...."<< std::endl;
 			menuSaveMap=false;
 		}
->>>>>>> v1.0.0
+
         if(menuReset)
         {
             menuShowGraph = true;
