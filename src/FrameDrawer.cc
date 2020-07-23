@@ -125,7 +125,12 @@ cv::Mat FrameDrawer::DrawFrame()
     return imWithInfo;
 }
 
-
+/**
+ * @function 输入一张图像与系统的状态，绘制系统匹配信息到图像上
+ * @param im 输入图像
+ * 					nState 系统状态
+ * 					imText 叠加字符串以后的图像
+ */
 void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
 {
     stringstream s;

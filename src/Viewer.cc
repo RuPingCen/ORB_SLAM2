@@ -57,9 +57,16 @@ void Viewer::Run()
 {
     mbFinished = false;
     mbStopped = false;
-
+    // 创建窗口
     pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
 
+	//用于显示图像信息
+	pangolin::GlTexture imageTexture(mImageWidth/2,mImageHeight/2,GL_RGB,false,0,GL_BGR,GL_UNSIGNED_BYTE);
+	pangolin::View& rgb_image = pangolin::Display("rgb")
+									//.SetBounds(0.4,0,0.6,0,1024.0f/768.0f)
+									//.SetLock(pangolin::LockRight, pangolin::LockTop);
+									.SetBounds(1/5.0f,1,0,3/5.0f,(mImageWidth/2)/(mImageHeight/2)) //前面两个参数表示纵向宽度和窗口大小
+									.SetLock(pangolin::LockLeft, pangolin::LockTop);
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
 
@@ -72,15 +79,29 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
-    pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
+	//第一个参数为按钮的名字，第二个为默认状态，第三个为是否有选择框
+	pangolin::Var<bool> menuShowImage("menu.Show Image",false,true);
+	pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
+	
+	pangolin::Var<bool> menuSaveMap("menu.Save Map",false,false);
+    pangolin::Var<bool> menuReset("menu.Reset",false,false);
+	//第一个参数为按钮的名字，第二个为默认状态，第三个为最低值，第四个为最高
+	//pangolin::Var<int> a_int("menu.slam_speed",2,1,10);
+	//设计文本输出于面板
+	//pangolin::Var<pangolin::OpenGlMatrix> rotation_matrix("menu.r", RotationMatrix());
+	//pangolin::Var<pangolin::OpenGlMatrix::Translate> translation_vector("menu.t", TranslationVector());
+	// https://blog.csdn.net/unlimitedai/article/details/96134857
+
+	
+	
+	// 放置一个相机
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
                 pangolin::ProjectionMatrix(1024,768,mViewpointF,mViewpointF,512,389,0.1,1000),
                 pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0)
                 );
-
+	// 创建视角窗口
     // Add named OpenGL viewport to window and provide 3D Handler
     pangolin::View& d_cam = pangolin::CreateDisplay()
             .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f/768.0f)
@@ -89,7 +110,7 @@ void Viewer::Run()
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-    cv::namedWindow("ORB-SLAM2: Current Frame");
+    //cv::namedWindow("ORB-SLAM2: Current Frame");
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -133,6 +154,7 @@ void Viewer::Run()
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
+<<<<<<< HEAD
        
         pangolin::FinishFrame();
  
@@ -140,6 +162,30 @@ void Viewer::Run()
         cv::imshow("ORB-SLAM2: Current Frame",im);
        cv::waitKey(mT);
          
+=======
+       if(menuShowImage)
+	   {
+ 			cv::Mat im = mpFrameDrawer->DrawFrame();
+			cv::Size dsize = cv::Size(mImageWidth/2,mImageHeight/2);
+			cv::Mat image2 = cv::Mat(dsize,im.type());
+			cv::resize(im, image2,dsize);
+//         cv::imshow("ORB-SLAM2: Current Frame",im);
+//         cv::waitKey(mT);
+       //向GPU装载图像
+		imageTexture.Upload(image2.data,GL_BGR,GL_UNSIGNED_BYTE);
+		
+		rgb_image.Activate();   //显示图像
+		glColor3f(1.0,1.0,1.0);   // 设置背景颜色
+		imageTexture.RenderToViewportFlipY(); //反转Ｙ轴
+	   }
+		pangolin::FinishFrame();
+		
+		  if(menuSaveMap)
+        {
+		    std::cout<<"save map to disk ...."<< std::endl;
+			menuSaveMap=false;
+		}
+>>>>>>> v1.0.0
         if(menuReset)
         {
             menuShowGraph = true;
