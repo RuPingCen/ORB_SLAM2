@@ -49,19 +49,19 @@ using namespace std;
 class ImageGrabber
 {
 public:
-  ros::NodeHandle nh;
- ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath,pub_odom;
-   size_t mcounter=0;	 
-    nav_msgs::Path  camerapath;
-    ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
+	ros::NodeHandle nh;
+	ros::Publisher  pub_rgb,pub_depth,pub_tcw,pub_camerapath,pub_odom;
+	size_t mcounter=0;	 
+	nav_msgs::Path  camerapath;
+	ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM),nh("~")
 	{
 	      //创建ROS的发布节点
-                  
-                   pub_rgb= nh.advertise<sensor_msgs::Image> ("RGBImage", 10); 
-				   pub_depth= nh.advertise<sensor_msgs::Image> ("DepthImage", 10); 
-				   pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
-				   pub_odom= nh.advertise<nav_msgs::Odometry> ("Odometry", 10); 
-				   pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
+           
+		pub_rgb= nh.advertise<sensor_msgs::Image> ("RGBImage", 10); 
+		pub_depth= nh.advertise<sensor_msgs::Image> ("DepthImage", 10); 
+		pub_tcw= nh.advertise<geometry_msgs::PoseStamped> ("CameraPose", 10); 
+		pub_odom= nh.advertise<nav_msgs::Odometry> ("Odometry", 10); 
+		pub_camerapath= nh.advertise<nav_msgs::Path> ("Path", 10); 
 	}
 
     void GrabStereo(const sensor_msgs::Image::ConstPtr msgLeft,const sensor_msgs::Image::ConstPtr msgRight);

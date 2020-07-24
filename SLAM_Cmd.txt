@@ -1,6 +1,13 @@
 V2.0.0 添加光流跟踪在帧与帧之间的匹配中 加速ORB-SLAM2
 
+./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml /media/crp/0FB71B910FB71B91/dataSet/KITTI/sequences/03
 
+使用ROS接口
+roslaunch publish_image_datasets publish_kitti.launch 
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/crp/crp/SLAM/ORB_SLAM2/Examples/ROS
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml false
+
+note:光流加速使用图片没问题，但是ROS接口运行有问题，还未发现原因
 
 V1.0.0 添加了RGBD-双目 单目的ROS接口 发布相机的位姿、轨迹数据到ROS topic
 	可配合 pointcloud_mapping 包实现RGBD模式下建图（在Astra相机和TUM数据上测试通过）
